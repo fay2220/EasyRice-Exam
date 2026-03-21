@@ -108,16 +108,15 @@ export default function Form() {
         <div className="min-h-screen bg-slate-50 font-sans">
             <Navbar />
             <div className="max-w-3xl mx-auto p-6 md:p-8 space-y-6">
-
                 <button
                     onClick={() => navigate(-1)}
                     className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium mb-2 w-fit"
                 >
                     <ChevronLeft className="w-5 h-5" /> Back
                 </button>
-
+                <h2 className="text-3xl font-bold text-slate-900 mb-6 text-center">Create Inspection</h2>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 md:p-8">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Create New Inspection</h2>
+
 
                     <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -143,7 +142,7 @@ export default function Form() {
                                     required
                                     value={standard}
                                     onChange={e => setStandard(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700"
+                                    className="w-full h-10 px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700"
                                 >
                                     <option value="" disabled>Select a standard...</option>
                                     {standardList.map(s => (
