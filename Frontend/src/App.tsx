@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 
+import Form from './pages/Form';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/form" element={<div className="p-8 text-center text-xl font-sans mt-10">Form Page Placeholder (To Be Implemented)</div>} />
+        <Route path="/form" element={<Form />} />
       </Routes>
     </BrowserRouter>
   );
