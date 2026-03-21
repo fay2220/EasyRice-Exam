@@ -49,9 +49,8 @@ export interface CalculationResult {
 }
 
 // ---- Load standards from standard.json at the Backend root ----
-// __dirname (ts-node) = Backend/src/services  →  ../../.. = Backend root
-// __dirname (compiled) = Backend/dist/services → ../../.. = Backend root
-const standardsFilePath = path.resolve(__dirname, '../../../standard.json');
+// __dirname with ts-node inside Docker = /app/src/services → ../../ = /app
+const standardsFilePath = path.resolve(__dirname, '../../standard.json');
 
 function loadStandards(): Standard[] {
     try {
