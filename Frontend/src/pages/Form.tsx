@@ -20,7 +20,7 @@ export default function Form() {
     useEffect(() => {
         const fetchStandards = async () => {
             try {
-                const res = await fetch(`${import.meta.env.API_URL}/standard`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/standard`);
                 if (res.ok) {
                     const data = await res.json();
                     setStandardList(data);

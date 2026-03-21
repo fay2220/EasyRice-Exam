@@ -14,7 +14,7 @@ export default function Home() {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const res = await fetch(`${import.meta.env.API_URL}/history`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/history`);
                 if (res.ok) {
                     const data = await res.json();
                     setHistoryData(data);

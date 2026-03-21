@@ -1,0 +1,25 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Inspection {
+  id            String   @id @default(uuid())
+  inspectionID  String   @unique
+  name          String
+  createDate    String
+  rawDate       Float
+  standardID    String
+  note          String
+  standardName  String
+  samplingDate  String
+  samplingPoint String[]
+  price         Float
+  imageLink     String?
+  standardData  Json
+}
