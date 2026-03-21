@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
 
 import SearchCard from "../components/SearchCard";
 import DataTable from "../components/DataTable";
@@ -7,27 +6,26 @@ import CreateInspecButton from "../components/CreateInspecButton";
 import Navbar from "../components/Nav";
 import ChangePageButton from "../components/ChangePageButton";
 
-// 1. Mock Data Source
-const generateData = () => {
-    return Array.from({ length: 25 }).map((_, i) => {
-        const idNum = 2024001 + i;
-        const date = new Date(Date.now() - (i * 86400000 + i * 3600000));
-        return {
-            rawId: `INS-${idNum}`,
-            createDate: format(date, 'dd/MM/yyyy - HH:mm'),
-            rawDate: date.getTime(),
-            name: ['Standard Rice', 'Premium Jasmine', 'Brown Rice', 'Basmati Blend', 'Sticky Rice'][i % 5],
-            standard: ['Defect High', 'Quality Standard A', 'Grade B', 'Export Quality', 'Local Market'][i % 5],
-            note: i % 3 === 0 ? 'Urgent review' : 'Normal processing',
-        };
-    });
-};
-
-const MOCK_DATA = generateData();
-
 export default function Home() {
 
     // State
+    const [historyData, setHistoryData] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch(`${import.meta.env.API_URL}/history`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setHistoryData(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch history:", err);
+            }
+        };
+        fetchHistory();
+    }, []);
+
     const [searchInput, setSearchInput] = useState('');
     const [fromDateInput, setFromDateInput] = useState('');
     const [toDateInput, setToDateInput] = useState('');
@@ -77,7 +75,7 @@ export default function Home() {
     };
 
     // Derived Data
-    const filteredData = MOCK_DATA.filter((item) => {
+    const filteredData = historyData.filter((item) => {
         const matchId = item.rawId.toLowerCase().includes(filterId.toLowerCase());
 
         let matchDate = true;
@@ -111,18 +109,16 @@ export default function Home() {
                     <CreateInspecButton />
 
                     {/* Search Card */}
-                    <div className="p-6">
-                        <SearchCard
-                            searchInput={searchInput}
-                            setSearchInput={setSearchInput}
-                            fromDateInput={fromDateInput}
-                            setFromDateInput={setFromDateInput}
-                            toDateInput={toDateInput}
-                            setToDateInput={setToDateInput}
-                            handleSearch={handleSearch}
-                            handleClearFilter={handleClearFilter}
-                        />
-                    </div>
+                    <SearchCard
+                        searchInput={searchInput}
+                        setSearchInput={setSearchInput}
+                        fromDateInput={fromDateInput}
+                        setFromDateInput={setFromDateInput}
+                        toDateInput={toDateInput}
+                        setToDateInput={setToDateInput}
+                        handleSearch={handleSearch}
+                        handleClearFilter={handleClearFilter}
+                    />
 
                     {/* Table */}
                     <DataTable

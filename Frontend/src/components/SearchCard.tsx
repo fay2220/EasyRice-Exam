@@ -30,46 +30,52 @@ export default function SearchCard({
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                        <div className="relative group">
+                        <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-medium text-slate-600">
                                 ID
                             </label>
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
-                            <input
-                                type="text"
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search by Inspection ID..."
-                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400"
-                            />
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                                <input
+                                    type="text"
+                                    value={searchInput}
+                                    onChange={(e) => setSearchInput(e.target.value)}
+                                    placeholder="Search by Inspection ID..."
+                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400"
+                                />
+                            </div>
                         </div>
 
-                        <div className="relative group">
+                        <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-medium text-slate-600">
                                 From Date
                             </label>
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
-                            <input
-                                type="date"
-                                value={fromDateInput}
-                                onChange={(e) => setFromDateInput(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400 text-sm"
-                                placeholder="From Date"
-                            />
+                            <div className="relative group">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                                <input
+                                    type="date"
+                                    value={fromDateInput}
+                                    onChange={(e) => setFromDateInput(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400 text-sm"
+                                    placeholder="From Date"
+                                />
+                            </div>
                         </div>
 
-                        <div className="relative group">
+                        <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-medium text-slate-600">
                                 To Date
                             </label>
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
-                            <input
-                                type="date"
-                                value={toDateInput}
-                                onChange={(e) => setToDateInput(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400 text-sm"
-                                placeholder="To Date"
-                            />
+                            <div className="relative group">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                                <input
+                                    type="date"
+                                    value={toDateInput}
+                                    onChange={(e) => setToDateInput(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 placeholder:text-slate-400 text-sm"
+                                    placeholder="To Date"
+                                />
+                            </div>
                         </div>
                     </div>
 

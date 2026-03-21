@@ -20,7 +20,7 @@ export default function Form() {
     useEffect(() => {
         const fetchStandards = async () => {
             try {
-                const res = await fetch("http://localhost:3000/standard");
+                const res = await fetch(`${import.meta.env.API_URL}/standard`);
                 if (res.ok) {
                     const data = await res.json();
                     setStandardList(data);
@@ -29,11 +29,7 @@ export default function Form() {
                 }
             } catch (err) {
                 console.error("Backend fetch error for /standard:", err);
-                setStandardList([
-                    { id: "std-1", name: "Quality Standard A" },
-                    { id: "std-2", name: "Export Quality" },
-                    { id: "std-3", name: "Local Market" }
-                ]);
+
             }
         };
         fetchStandards();
@@ -84,7 +80,7 @@ export default function Form() {
             formData.append("datetime", datetime);
             formData.append("file", file);
 
-            const res = await fetch("http://localhost:3000/history", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/history`, {
                 method: "POST",
                 body: formData,
             });
