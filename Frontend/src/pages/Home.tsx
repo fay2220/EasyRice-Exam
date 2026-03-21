@@ -34,7 +34,6 @@ export default function Home() {
     const [filterFromDate, setFilterFromDate] = useState('');
     const [filterToDate, setFilterToDate] = useState('');
 
-    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -43,7 +42,7 @@ export default function Home() {
         setFilterId(searchInput);
         setFilterFromDate(fromDateInput);
         setFilterToDate(toDateInput);
-        setCurrentPage(1); // Reset page on new search
+        setCurrentPage(1);
     };
 
     const handleClearFilter = () => {
@@ -54,24 +53,6 @@ export default function Home() {
         setFilterFromDate('');
         setFilterToDate('');
         setCurrentPage(1);
-    };
-
-    const toggleSelectAll = (isAllSelected: boolean) => {
-        if (isAllSelected) {
-            setSelectedRows(new Set());
-        } else {
-            setSelectedRows(new Set(currentData.map(item => item.rawId)));
-        }
-    };
-
-    const toggleSelectRow = (id: string) => {
-        const newSet = new Set(selectedRows);
-        if (newSet.has(id)) {
-            newSet.delete(id);
-        } else {
-            newSet.add(id);
-        }
-        setSelectedRows(newSet);
     };
 
     // Derived Data
@@ -98,15 +79,16 @@ export default function Home() {
         currentPage * itemsPerPage
     );
 
-    const isAllSelected = currentData.length > 0 && currentData.every(item => selectedRows.has(item.rawId));
-
     return (
         <>
             <Navbar />
             <div className="min-h-screen bg-slate-50 font-sans p-6 md:p-8 text-slate-800">
                 <div className="max-w-7xl mx-auto space-y-6">
 
-                    <CreateInspecButton />
+                    {/* Header row with button aligned right */}
+                    <div className="flex justify-end">
+                        <CreateInspecButton />
+                    </div>
 
                     {/* Search Card */}
                     <SearchCard
@@ -123,10 +105,6 @@ export default function Home() {
                     {/* Table */}
                     <DataTable
                         currentData={currentData}
-                        selectedRows={selectedRows}
-                        isAllSelected={isAllSelected}
-                        toggleSelectAll={toggleSelectAll}
-                        toggleSelectRow={toggleSelectRow}
                         filterId={filterId}
                     />
 

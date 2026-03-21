@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { getStandardService } from '../services/standard';
-import { getHistoryService, deleteHistoryService, saveHistoryService } from '../services/history';
+import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService } from '../services/history';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -17,6 +17,18 @@ router.get('/history', async (req: Request, res: Response) => {
         res.json(data);
     } catch (error) {
         console.error("Failed to fetch history:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.get('/history/:id', async (req: Request, res: Response) => {
+    try {
+        const id = String(req.params.id);
+        const data = await getHistoryByIdService(id);
+        if (!data) return res.status(404).json({ error: "Inspection not found" });
+        res.json(data);
+    } catch (error) {
+        console.error("Failed to fetch inspection by id:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });

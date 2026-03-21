@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: easyrice_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
@@ -25,9 +25,6 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
 
-volumes:
-  pgdata:
-
   backend:
     build:
       context: ./Backend
@@ -42,3 +39,6 @@ volumes:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - DATABASE_URL=postgresql://easyrice:password123@database:5432/easyrice_db?schema=public
+
+volumes:
+  pgdata:

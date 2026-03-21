@@ -39,6 +39,12 @@ export const getHistoryService = async () => {
     }));
 };
 
+export const getHistoryByIdService = async (inspectionID: string) => {
+    return prisma.inspection.findUnique({
+        where: { inspectionID }
+    });
+};
+
 export const deleteHistoryService = async (inspectionID: string) => {
     return prisma.inspection.delete({
         where: { inspectionID }
