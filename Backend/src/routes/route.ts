@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
+import { getHistoryService, getHistoryByIdService, deleteHistoryService } from '../services/history';
+import { createHistoryController } from '../Controllers/historyController';
 import { getStandardService } from '../services/standard';
-import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService } from '../services/history';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -33,37 +34,9 @@ router.get('/history/:id', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/history', upload.single('file'), async (req: Request, res: Response) => {
-    try {
-        console.log("Received new DB insertion payload:", req.body.name);
-        
-        if (!req.file) {
-            return res.status(400).json({ error: "JSON raw data file is absolutely required" });
-        }
 
-        const rawJson = JSON.parse(req.file.buffer.toString('utf-8'));
-        
-        const inspectionData = {
-            inspectionID: "", 
-            name: req.body.name,
-            createDate: new Date().toLocaleDateString('en-GB') + ' - ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            standardID: req.body.standard,
-            standardName: req.body.standard, 
-            note: req.body.note,
-            price: parseFloat(req.body.price || "0"),
-            samplingDate: req.body.datetime || "",
-            samplingPoint: JSON.parse(req.body.samplingPoint || "[]"),
-            imageLink: "",
-            standardData: rawJson
-        };
+router.post('/history', upload.single('file'), createHistoryController);
 
-        const result = await saveHistoryService(inspectionData);
-        res.status(200).json({ success: true, message: "Inspection saved securely to DB!", data: result });
-    } catch (err) {
-        console.error("DB Insertion Error:", err);
-        res.status(500).json({ error: "Failed to persist to Postgres" });
-    }
-});
 
 router.delete('/history/:id', async (req: Request, res: Response) => {
     try {

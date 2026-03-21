@@ -1,7 +1,56 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Nav';
-import { ArrowLeft, Pencil } from 'lucide-react';
+
+interface CategoryResult {
+    key: string;
+    name: string;
+    count: number;
+    totalWeight: number;
+    percentageCount: number;
+    percentageWeight: number;
+    minLength?: number;
+    maxLength?: number;
+}
+
+interface CalculationResult {
+    standardID: string;
+    standardName: string;
+    totalGrains: number;
+    totalWeight: number;
+    categories: CategoryResult[];
+}
+
+interface Grain {
+    length: number;
+    weight: number;
+    shape: string;
+    type: string;
+}
+
+const DEFECT_TYPES = ['yellow', 'paddy', 'damaged', 'glutinous', 'chalky', 'red'];
+
+function computeDefects(grains: Grain[]) {
+    const total = grains.length;
+    const result: { name: string; count: number; pct: number }[] = [];
+    for (const type of DEFECT_TYPES) {
+        const count = grains.filter(g => g.type === type).length;
+        result.push({ name: type, count, pct: total > 0 ? (count / total) * 100 : 0 });
+    }
+    const defectTotal = result.reduce((s, r) => s + r.count, 0);
+    result.push({ name: 'Total', count: defectTotal, pct: total > 0 ? (defectTotal / total) * 100 : 0 });
+    return result;
+}
+
+function formatLength(cat: CategoryResult): string {
+    const min = cat.minLength ?? null;
+    const max = cat.maxLength ?? null;
+    if (min !== null && max !== null) {
+        if (max >= 99) return `>= ${min}`;
+        return `${min} - ${max}`;
+    }
+    return '-';
+}
 
 export default function Result() {
     const { id } = useParams();
@@ -26,83 +75,159 @@ export default function Result() {
         if (id) fetchResult();
     }, [id]);
 
-    return (
-        <div className="min-h-screen bg-slate-50 font-sans">
-            <Navbar />
-            <div className="max-w-3xl mx-auto p-6 md:p-8 space-y-6">
+    const calculation: CalculationResult | null = inspection?.standardData?.calculation ?? null;
+    const grains: Grain[] = inspection?.standardData?.grains ?? [];
+    const defects = grains.length > 0 ? computeDefects(grains) : [];
 
+    return (
+        <div className="min-h-screen bg-[#f5f5f0] font-sans">
+            <Navbar />
+
+            <div className="max-w-5xl mx-auto px-6 py-8">
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
-                        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : inspection ? (
                     <>
-                        <div>
-                            <h2 className="text-2xl font-bold text-slate-900">Inspection Result</h2>
-                            <p className="text-sm text-slate-500 mt-1">ID: <span className="font-mono font-semibold text-slate-700">{inspection.inspectionID}</span></p>
-                        </div>
+                        {/* Page title */}
+                        <h1 className="text-4xl font-bold text-center text-slate-900 mb-8">Inspection</h1>
 
-                        {/* Image */}
-                        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-                            <img
-                                src={inspection.imageLink || "https://easyrice-es-trade-data.s3.ap-southeast-1.amazonaws.com/example-rice.webp"}
-                                alt="Inspection sample"
-                                className="w-full object-cover max-h-96"
-                            />
-                        </div>
+                        {/* Two-column layout */}
+                        <div className="flex gap-6 items-start">
 
-                        {/* Action Buttons under the image */}
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors shadow-sm"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
-                            </button>
-                            <button
-                                onClick={() => navigate(`/form?edit=${id}`)}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors shadow-sm"
-                            >
-                                <Pencil className="w-4 h-4" />
-                                Edit
-                            </button>
-                        </div>
+                            {/* Left column — image + buttons */}
+                            <div className="flex flex-col gap-3 w-[260px] flex-shrink-0">
+                                <img
+                                    src={inspection.imageLink || "https://easyrice-es-trade-data.s3.ap-southeast-1.amazonaws.com/example-rice.webp"}
+                                    alt="Inspection sample"
+                                    className="w-full rounded-xl object-cover aspect-square"
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => navigate(-1)}
+                                        className="flex-1 py-2 rounded border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={() => navigate(`/form?edit=${id}`)}
+                                        className="flex-1 py-2 rounded bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition-colors"
+                                    >
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
 
-                        {/* Info Card */}
-                        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 space-y-4">
-                            <h3 className="font-semibold text-slate-900 text-lg">Inspection Details</h3>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Name</p>
-                                    <p className="text-slate-800 font-medium">{inspection.name}</p>
+                            {/* Right column — cards */}
+                            <div className="flex-1 space-y-4">
+
+                                {/* Card 1 — core fields */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                                    <div className="grid grid-cols-2 gap-y-4 text-sm">
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Create Date - Time</p>
+                                            <p className="font-semibold text-slate-800">{inspection.createDate || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Inspection ID:</p>
+                                            <p className="font-semibold text-slate-800">{inspection.inspectionID || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Standard:</p>
+                                            <p className="font-semibold text-slate-800">{inspection.standardName || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Total Sample:</p>
+                                            <p className="font-semibold text-slate-800">
+                                                {calculation ? `${calculation.totalGrains.toLocaleString()} kernal` : (grains.length > 0 ? `${grains.length.toLocaleString()} kernal` : '-')}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-slate-500 text-xs mb-0.5">Update Date - Time:</p>
+                                            <p className="font-semibold text-slate-800">{inspection.createDate || '-'}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Standard</p>
-                                    <p className="text-slate-800 font-medium">{inspection.standardName}</p>
+
+                                {/* Card 2 — extra details */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                                    <div className="grid grid-cols-2 gap-y-4 text-sm">
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Note</p>
+                                            <p className="font-semibold text-slate-800">{inspection.note || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Price</p>
+                                            <p className="font-semibold text-slate-800">
+                                                {inspection.price != null ? Number(inspection.price).toLocaleString() : '-'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Date/Time of Sampling</p>
+                                            <p className="font-semibold text-slate-800">{inspection.samplingDate || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500 text-xs mb-0.5">Sampling Point</p>
+                                            <p className="font-semibold text-slate-800">
+                                                {inspection.samplingPoint?.join(', ') || '-'}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Created</p>
-                                    <p className="text-slate-800 font-medium">{inspection.createDate}</p>
-                                </div>
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Price</p>
-                                    <p className="text-slate-800 font-medium">{inspection.price?.toFixed(2) ?? '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Sampling Date</p>
-                                    <p className="text-slate-800 font-medium">{inspection.samplingDate || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-slate-400 text-xs font-medium uppercase mb-1">Sampling Points</p>
-                                    <p className="text-slate-800 font-medium">{inspection.samplingPoint?.join(', ') || '-'}</p>
-                                </div>
-                                {inspection.note && (
-                                    <div className="col-span-2">
-                                        <p className="text-slate-400 text-xs font-medium uppercase mb-1">Note</p>
-                                        <p className="text-slate-800 font-medium">{inspection.note}</p>
+
+                                {/* Composition table */}
+                                {calculation && calculation.categories.length > 0 && (
+                                    <div className="bg-white rounded-xl border border-slate-200 p-5">
+                                        <h2 className="text-base font-bold text-slate-900 mb-3">Composition</h2>
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-slate-100 text-slate-600">
+                                                    <th className="py-2 px-3 text-left font-medium">Name</th>
+                                                    <th className="py-2 px-3 text-right font-medium">Length</th>
+                                                    <th className="py-2 px-3 text-right font-medium">Actual</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {calculation.categories.map(cat => (
+                                                    <tr key={cat.key} className="border-t border-slate-100">
+                                                        <td className="py-2.5 px-3 text-slate-800">{cat.name}</td>
+                                                        <td className="py-2.5 px-3 text-right text-slate-600">{formatLength(cat)}</td>
+                                                        <td className="py-2.5 px-3 text-right text-green-600 font-semibold">
+                                                            {cat.percentageWeight.toFixed(2)} %
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 )}
+
+                                {/* Defect Rice table */}
+                                {defects.length > 0 && (
+                                    <div className="bg-white rounded-xl border border-slate-200 p-5">
+                                        <h2 className="text-base font-bold text-slate-900 mb-3">Defect Rice</h2>
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-slate-100 text-slate-600">
+                                                    <th className="py-2 px-3 text-left font-medium">Name</th>
+                                                    <th className="py-2 px-3 text-right font-medium">Actual</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {defects.map(d => (
+                                                    <tr key={d.name} className="border-t border-slate-100">
+                                                        <td className="py-2.5 px-3 text-slate-800 capitalize">{d.name}</td>
+                                                        <td className="py-2.5 px-3 text-right text-green-600 font-semibold">
+                                                            {d.pct.toFixed(2)} %
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
                             </div>
                         </div>
                     </>
