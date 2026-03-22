@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getStandardById, calculateRiceCategories, Grain } from '../services/standard';
-import { saveHistoryService } from '../services/history';
+import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService } from '../services/history';
+
 
 export const createHistoryController = async (req: Request, res: Response) => {
     try {
@@ -56,3 +57,37 @@ export const createHistoryController = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Failed to save inspection" });
     }
 };
+
+export const deleteHistoryController = async (req: Request, res: Response) => {
+    try {
+        // the :id param matches the inspectionID variable since Prisma relies on that unique ID
+        const id = String(req.params.id);
+        const data = await deleteHistoryService(id);
+        res.json({ success: true, message: "Deleted successfully", data });
+    } catch (err) {
+        console.error("Delete Error:", err);
+        res.status(500).json({ error: "Failed to delete" });
+    }
+}
+
+export const getHistoryByIdController = async (req: Request, res: Response) => {
+    try {
+        const id = String(req.params.id);
+        const data = await getHistoryByIdService(id);
+        if (!data) return res.status(404).json({ error: "Inspection not found" });
+        res.json(data);
+    } catch (error) {
+        console.error("Failed to fetch inspection by id:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+export const getHistoryController = async (req: Request, res: Response) => {
+    try {
+        const data = await getHistoryService();
+        res.json(data);
+    } catch (error) {
+        console.error("Failed to fetch history:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}

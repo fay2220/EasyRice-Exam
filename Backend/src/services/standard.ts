@@ -1,13 +1,9 @@
 import path from 'path';
 import fs from 'fs';
 
-// ---- Simple Standard type (for dropdown list) ----
-export interface Standard {
-    id: string;
-    name: string;
-    createDate?: string;
-    standardData?: StandardCategory[];
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface StandardCategory {
     key: string;
@@ -15,11 +11,17 @@ export interface StandardCategory {
     shape: string[];
     minLength: number;
     maxLength: number;
-    conditionMin: 'GT' | 'GTE';
-    conditionMax: 'LT' | 'LTE';
+    conditionMin: 'GT' | 'GTE';   // GT  = strictly greater than (>)
+    conditionMax: 'LT' | 'LTE';   // LTE = less than or equal   (<=)
 }
 
-// ---- Grain type (from uploaded mock.json) ----
+export interface Standard {
+    id: string;
+    name: string;
+    createDate?: string;
+    standardData?: StandardCategory[];
+}
+
 export interface Grain {
     length: number;
     weight: number;
@@ -27,19 +29,17 @@ export interface Grain {
     type: string;
 }
 
-// ---- Per-category result ----
 export interface CategoryResult {
     key: string;
     name: string;
-    count: number;
-    totalWeight: number;
-    percentageCount: number;
-    percentageWeight: number;
     minLength: number;
     maxLength: number;
+    count: number;
+    totalWeight: number;
+    percentageCount: number;   // % by grain count
+    percentageWeight: number;  // % by total weight
 }
 
-// ---- Full calculation result stored in DB ----
 export interface CalculationResult {
     standardID: string;
     standardName: string;
@@ -48,71 +48,130 @@ export interface CalculationResult {
     categories: CategoryResult[];
 }
 
-// ---- Load standards from standard.json at the Backend root ----
-// __dirname with ts-node inside Docker = /app/src/services → ../../ = /app
-const standardsFilePath = path.resolve(__dirname, '../../standard.json');
+// ─────────────────────────────────────────────────────────────────────────────
+// Load standard.json
+// Inside Docker (ts-node):  __dirname = /app/src/services  →  ../../ = /app
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STANDARD_JSON_PATH = path.resolve(__dirname, '../../standard.json');
 
 function loadStandards(): Standard[] {
     try {
-        const raw = fs.readFileSync(standardsFilePath, 'utf-8');
+        const raw = fs.readFileSync(STANDARD_JSON_PATH, 'utf-8');
         return JSON.parse(raw) as Standard[];
-    } catch (e) {
-        console.warn('Could not load standard.json, falling back to empty list:', e);
+    } catch (err) {
+        console.error('[standard] Failed to load standard.json:', err);
         return [];
     }
 }
 
-export const getStandardService = (): Pick<Standard, 'id' | 'name'>[] => {
-    return loadStandards().map(({ id, name }) => ({ id, name }));
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Public data access
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const getStandardById = (id: string): Standard | undefined => {
-    return loadStandards().find(s => s.id === id);
-};
+/** Returns the id/name list shown in the Form dropdown */
+export const getStandardService = (): Pick<Standard, 'id' | 'name'>[] =>
+    loadStandards().map(({ id, name }) => ({ id, name }));
 
-// ---- Core categorization algorithm ----
+/** Returns ALL full standard objects including standardData (used by GET /standard) */
+export const getAllStandards = (): Standard[] => loadStandards();
+
+
+/** Looks up one full standard (including standardData) by its id */
+export const getStandardById = (id: string): Standard | undefined =>
+    loadStandards().find(s => s.id === id);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Condition helpers  (read conditionMin / conditionMax from the JSON)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Check whether a grain's length satisfies the minimum-side condition.
+ * conditionMin 'GT'  → length >  minLength (strictly greater)
+ * conditionMin 'GTE' → length >= minLength (greater or equal)
+ */
+function checkMinCondition(
+    grainLength: number,
+    minLength: number,
+    conditionMin: StandardCategory['conditionMin']
+): boolean {
+    return conditionMin === 'GTE'
+        ? grainLength >= minLength
+        : grainLength > minLength;
+}
+
+/**
+ * Check whether a grain's length satisfies the maximum-side condition.
+ * conditionMax 'LT'  → length <  maxLength (strictly less)
+ * conditionMax 'LTE' → length <= maxLength (less or equal)
+ */
+function checkMaxCondition(
+    grainLength: number,
+    maxLength: number,
+    conditionMax: StandardCategory['conditionMax']
+): boolean {
+    return conditionMax === 'LTE'
+        ? grainLength <= maxLength
+        : grainLength < maxLength;
+}
+
+/**
+ * Returns true if the grain falls inside the category's length range.
+ * Both min and max conditions (from the JSON) must be satisfied.
+ */
+function grainMatchesCategory(grain: Grain, cat: StandardCategory): boolean {
+    return (
+        checkMinCondition(grain.length, cat.minLength, cat.conditionMin) &&
+        checkMaxCondition(grain.length, cat.maxLength, cat.conditionMax)
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calculation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Classify every grain against the standard's categories and return
+ * per-category counts, weights, and percentages.
+ *
+ * Data source: grains from the uploaded mock.json,
+ *              categories from the selected standard in standard.json.
+ */
 export function calculateRiceCategories(
     grains: Grain[],
     standard: Standard
 ): CalculationResult {
-    const cats = standard.standardData ?? [];
+    const categories = standard.standardData ?? [];
     const totalGrains = grains.length;
     const totalWeight = grains.reduce((sum, g) => sum + g.weight, 0);
 
-    const categories: CategoryResult[] = cats.map(cat => {
-        const matching = grains.filter(g => {
-            const minOk = cat.conditionMin === 'GTE'
-                ? g.length >= cat.minLength
-                : g.length > cat.minLength;
-            const maxOk = cat.conditionMax === 'LTE'
-                ? g.length <= cat.maxLength
-                : g.length < cat.maxLength;
-            return minOk && maxOk;
-        });
+    const categoryResults: CategoryResult[] = categories.map(cat => {
+        // Filter grains that satisfy this category's length conditions
+        const matched = grains.filter(g => grainMatchesCategory(g, cat));
 
-        const catWeight = matching.reduce((sum, g) => sum + g.weight, 0);
+        const catWeight = matched.reduce((sum, g) => sum + g.weight, 0);
 
         return {
-            key: cat.key,
-            name: cat.name,
-            count: matching.length,
-            totalWeight: parseFloat(catWeight.toFixed(6)),
+            key:             cat.key,
+            name:            cat.name,
+            minLength:       cat.minLength,
+            maxLength:       cat.maxLength,
+            count:           matched.length,
+            totalWeight:     parseFloat(catWeight.toFixed(6)),
             percentageCount: totalGrains > 0
-                ? parseFloat(((matching.length / totalGrains) * 100).toFixed(2))
+                ? parseFloat(((matched.length / totalGrains) * 100).toFixed(2))
                 : 0,
             percentageWeight: totalWeight > 0
                 ? parseFloat(((catWeight / totalWeight) * 100).toFixed(2))
                 : 0,
-            minLength: cat.minLength,
-            maxLength: cat.maxLength,
         };
     });
 
     return {
-        standardID: standard.id,
+        standardID:   standard.id,
         standardName: standard.name,
         totalGrains,
-        totalWeight: parseFloat(totalWeight.toFixed(6)),
-        categories,
+        totalWeight:  parseFloat(totalWeight.toFixed(6)),
+        categories:   categoryResults,
     };
 }
