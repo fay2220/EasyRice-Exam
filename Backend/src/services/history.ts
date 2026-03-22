@@ -1,27 +1,49 @@
 import { PrismaClient } from '@prisma/client';
-import { Inspection } from "../models/model";
-
+import { getStandardById, calculateRiceCategories, Grain } from './standard';
 const prisma = new PrismaClient();
 
-export const saveHistoryService = async (data: Omit<Inspection, 'standardData' | 'inspectionID'> & { standardData: any }) => {
+
+
+export const processAndSaveHistoryService = async (body: any, fileBuffer: Buffer) => {
+    // 1. Parse uploaded grain data
+    const rawJson = JSON.parse(fileBuffer.toString('utf-8'));
+    const grains: Grain[] = rawJson.grains ?? rawJson; // support both {grains:[]} and []
+
+    // 2. Look up the selected standard
+    const standardId = body.standard;
+    const standard = getStandardById(standardId);
+
+    if (!standard) {
+        throw new Error(`Standard ID "${standardId}" not found`);
+    }
+
+    // 3. Calculate rice categories
+    const calculationResult = calculateRiceCategories(grains, standard);
+
+    // 4. Build inspection record
     const rawId = `INS-${Date.now().toString().slice(-6)}`;
-    
-    return prisma.inspection.create({
+
+    const result = await prisma.inspection.create({
         data: {
             inspectionID: rawId,
-            name: data.name,
-            createDate: data.createDate,
+            name: body.name,
+            createDate: new Date().toLocaleDateString('en-GB') + ' - ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
             rawDate: Date.now(),
-            standardID: data.standardID,
-            note: data.note,
-            standardName: data.standardName,
-            samplingDate: data.samplingDate,
-            samplingPoint: data.samplingPoint,
-            price: data.price,
-            imageLink: data.imageLink || null,
-            standardData: data.standardData
+            standardID: standard.id,
+            note: body.note || "",
+            standardName: standard.name,
+            samplingDate: body.datetime || "",
+            samplingPoint: JSON.parse(body.samplingPoint || "[]"),
+            price: parseFloat(body.price || "0"),
+            imageLink: rawJson.imageURL || null,
+            standardData: {
+                calculation: calculationResult,
+                grains: grains
+            } as any
         }
     });
+
+    return { result, calculationResult };
 };
 
 export const getHistoryService = async () => {
@@ -59,11 +81,16 @@ export const bulkDeleteHistoryService = async (inspectionIDs: string[]) => {
 
 export const updateHistoryService = async (
     inspectionID: string,
-    data: { note?: string; price?: number; samplingPoint?: string[]; samplingDate?: string }
+    data: { note?: string; price?: any; samplingPoint?: any; samplingDate?: string }
 ) => {
     return prisma.inspection.update({
         where: { inspectionID },
-        data
+        data: {
+            note: data.note,
+            price: data.price !== undefined ? parseFloat(data.price) : undefined,
+            samplingPoint: Array.isArray(data.samplingPoint) ? data.samplingPoint : undefined,
+            samplingDate: data.samplingDate,
+        }
     });
 };
 

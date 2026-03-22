@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { getStandardById, calculateRiceCategories, Grain } from '../services/standard';
-import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService, updateHistoryService, bulkDeleteHistoryService } from '../services/history';
+import { getHistoryService, getHistoryByIdService, deleteHistoryService, processAndSaveHistoryService, updateHistoryService, bulkDeleteHistoryService } from '../services/history';
 
 
 
@@ -12,48 +11,18 @@ export const createHistoryController = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "JSON raw data file is required" });
         }
 
-        // 1. Parse uploaded grain data
-        const rawJson = JSON.parse(req.file.buffer.toString('utf-8'));
-        const grains: Grain[] = rawJson.grains ?? rawJson; // support both {grains:[]} and []
+        const { result, calculationResult } = await processAndSaveHistoryService(req.body, req.file.buffer);
 
-        // 2. Look up the selected standard
-        const standardId = req.body.standard;
-        const standard = getStandardById(standardId);
-
-        if (!standard) {
-            return res.status(400).json({ error: `Standard ID "${standardId}" not found` });
-        }
-
-        // 3. Calculate rice categories
-        const calculationResult = calculateRiceCategories(grains, standard);
-        console.log(`Categorization done: ${calculationResult.totalGrains} grains across ${calculationResult.categories.length} categories`);
-
-        // 4. Build inspection record
-        const inspectionData = {
-            inspectionID: "",
-            name: req.body.name,
-            createDate: new Date().toLocaleDateString('en-GB') + ' - ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            standardID: standard.id,
-            standardName: standard.name,
-            note: req.body.note || "",
-            price: parseFloat(req.body.price || "0"),
-            samplingDate: req.body.datetime || "",
-            samplingPoint: JSON.parse(req.body.samplingPoint || "[]"),
-            imageLink: rawJson.imageURL || "",
-            standardData: {
-                calculation: calculationResult,
-                grains: grains
-            }
-        };
-
-        const result = await saveHistoryService(inspectionData);
         res.status(200).json({
             success: true,
             message: "Inspection saved to DB!",
             data: result,
             calculation: calculationResult
         });
-    } catch (err) {
+    } catch (err: any) {
+        if (err.message && err.message.includes("not found")) {
+            return res.status(400).json({ error: err.message });
+        }
         console.error("Inspection save error:", err);
         res.status(500).json({ error: "Failed to save inspection" });
     }
@@ -111,12 +80,8 @@ export const updateHistoryController = async (req: Request, res: Response) => {
     try {
         const id = String(req.params.id);
         const { note, price, samplingPoint, samplingDate } = req.body;
-        const updated = await updateHistoryService(id, {
-            note,
-            price: price !== undefined ? parseFloat(price) : undefined,
-            samplingPoint: Array.isArray(samplingPoint) ? samplingPoint : undefined,
-            samplingDate,
-        });
+        
+        const updated = await updateHistoryService(id, { note, price, samplingPoint, samplingDate });
         res.json({ success: true, data: updated });
     } catch (err) {
         console.error("Update error:", err);
