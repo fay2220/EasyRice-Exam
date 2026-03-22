@@ -15,9 +15,10 @@ type Props = {
     selectedIds: string[];
     onSelectAll: (checked: boolean) => void;
     onSelectRow: (id: string, checked: boolean) => void;
+    isLoading?: boolean;
 };
 
-export default function DataTable({ currentData, filterId, selectedIds, onSelectAll, onSelectRow }: Props) {
+export default function DataTable({ currentData, filterId, selectedIds, onSelectAll, onSelectRow, isLoading }: Props) {
     const navigate = useNavigate();
 
     const isAllSelected = currentData.length > 0 && currentData.every(item => selectedIds.includes(item.rawId));
@@ -53,7 +54,16 @@ export default function DataTable({ currentData, filterId, selectedIds, onSelect
                         </tr>
                     </thead>
                     <tbody>
-                        {currentData.length > 0 ? (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={6} className="py-12 px-6 text-center text-slate-500">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-green-500 animate-spin"></div>
+                                        <p>Loading data...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : currentData.length > 0 ? (
                             currentData.map((item) => (
                                 <tr
                                     key={item.rawId}

@@ -13,8 +13,10 @@ export default function Home() {
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchHistory = useCallback(async () => {
+        setIsLoading(true);
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/history`);
             if (res.ok) {
@@ -23,6 +25,8 @@ export default function Home() {
             }
         } catch (err) {
             console.error("Failed to fetch history:", err);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -170,6 +174,7 @@ export default function Home() {
                             selectedIds={selectedIds}
                             onSelectAll={handleSelectAll}
                             onSelectRow={handleSelectRow}
+                            isLoading={isLoading}
                         />
                     </div>
 
