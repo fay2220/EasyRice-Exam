@@ -1,30 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 
-import SearchCard from "../components/SearchCard";
-import DataTable from "../components/DataTable";
-import CreateInspecButton from "../components/CreateInspecButton";
+import SearchCard from "../components/home/SearchCard";
+import DataTable from "../components/home/DataTable";
+import CreateInspecButton from "../components/home/CreateInspecButton";
 import Navbar from "../components/Nav";
-import ChangePageButton from "../components/ChangePageButton";
+import ChangePageButton from "../components/home/ChangePageButton";
 
 export default function Home() {
 
     // State
     const [historyData, setHistoryData] = useState<any[]>([]);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const fetchHistory = useCallback(async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/history`);
+            if (res.ok) {
+                const data = await res.json();
+                setHistoryData(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch history:", err);
+        }
+    }, []);
 
     useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/history`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setHistoryData(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch history:", err);
-            }
-        };
         fetchHistory();
-    }, []);
+    }, [fetchHistory]);
 
     const [searchInput, setSearchInput] = useState('');
     const [fromDateInput, setFromDateInput] = useState('');
@@ -43,6 +47,7 @@ export default function Home() {
         setFilterFromDate(fromDateInput);
         setFilterToDate(toDateInput);
         setCurrentPage(1);
+        setSelectedIds([]);
     };
 
     const handleClearFilter = () => {
@@ -53,12 +58,54 @@ export default function Home() {
         setFilterFromDate('');
         setFilterToDate('');
         setCurrentPage(1);
+        setSelectedIds([]);
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(currentData.map(item => item.rawId));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectRow = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIds(prev => [...prev, id]);
+        } else {
+            setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!selectedIds.length) return;
+        const confirmMsg = `Are you sure you want to delete ${selectedIds.length} item${selectedIds.length > 1 ? 's' : ''}?`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/history/bulk-delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            if (res.ok) {
+                setSelectedIds([]);
+                await fetchHistory();
+            } else {
+                alert("Failed to delete selected items");
+            }
+        } catch (err) {
+            console.error("Bulk delete error:", err);
+            alert("An error occurred during deletion");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Derived Data
     const filteredData = historyData.filter((item) => {
         const matchId = item.rawId.toLowerCase().includes(filterId.toLowerCase());
-
         let matchDate = true;
         if (filterFromDate) {
             matchDate = matchDate && item.rawDate >= new Date(filterFromDate).getTime();
@@ -68,7 +115,6 @@ export default function Home() {
             const endOfDay = new Date(filterToDate).getTime() + 86399999;
             matchDate = matchDate && item.rawDate <= endOfDay;
         }
-
         return matchId && matchDate;
     });
 
@@ -102,11 +148,30 @@ export default function Home() {
                         handleClearFilter={handleClearFilter}
                     />
 
-                    {/* Table */}
-                    <DataTable
-                        currentData={currentData}
-                        filterId={filterId}
-                    />
+                    {/* Table Actions & Table */}
+                    <div className="space-y-4">
+                        {/* Bulk Delete Button */}
+                        <div className="min-h-[40px] flex items-center">
+                            {selectedIds.length > 0 && (
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={isDeleting}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm disabled:opacity-50"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    {isDeleting ? 'Deleting...' : `Delete (${selectedIds.length})`}
+                                </button>
+                            )}
+                        </div>
+
+                        <DataTable
+                            currentData={currentData}
+                            filterId={filterId}
+                            selectedIds={selectedIds}
+                            onSelectAll={handleSelectAll}
+                            onSelectRow={handleSelectRow}
+                        />
+                    </div>
 
                     <ChangePageButton
                         filteredData={filteredData}

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getStandardById, calculateRiceCategories, Grain } from '../services/standard';
-import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService } from '../services/history';
+import { getHistoryService, getHistoryByIdService, deleteHistoryService, saveHistoryService, updateHistoryService, bulkDeleteHistoryService } from '../services/history';
+
 
 
 export const createHistoryController = async (req: Request, res: Response) => {
@@ -70,6 +71,20 @@ export const deleteHistoryController = async (req: Request, res: Response) => {
     }
 }
 
+export const bulkDeleteHistoryController = async (req: Request, res: Response) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: "An array of IDs is required" });
+        }
+        const data = await bulkDeleteHistoryService(ids);
+        res.json({ success: true, message: `Deleted ${data.count} items successfully`, data });
+    } catch (err) {
+        console.error("Bulk Delete Error:", err);
+        res.status(500).json({ error: "Failed to bulk delete" });
+    }
+}
+
 export const getHistoryByIdController = async (req: Request, res: Response) => {
     try {
         const id = String(req.params.id);
@@ -89,5 +104,22 @@ export const getHistoryController = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Failed to fetch history:", error);
         res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+export const updateHistoryController = async (req: Request, res: Response) => {
+    try {
+        const id = String(req.params.id);
+        const { note, price, samplingPoint, samplingDate } = req.body;
+        const updated = await updateHistoryService(id, {
+            note,
+            price: price !== undefined ? parseFloat(price) : undefined,
+            samplingPoint: Array.isArray(samplingPoint) ? samplingPoint : undefined,
+            samplingDate,
+        });
+        res.json({ success: true, data: updated });
+    } catch (err) {
+        console.error("Update error:", err);
+        res.status(500).json({ error: "Failed to update inspection" });
     }
 }

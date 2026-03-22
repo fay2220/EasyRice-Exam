@@ -50,3 +50,20 @@ export const deleteHistoryService = async (inspectionID: string) => {
         where: { inspectionID }
     });
 };
+
+export const bulkDeleteHistoryService = async (inspectionIDs: string[]) => {
+    return prisma.inspection.deleteMany({
+        where: { inspectionID: { in: inspectionIDs } }
+    });
+};
+
+export const updateHistoryService = async (
+    inspectionID: string,
+    data: { note?: string; price?: number; samplingPoint?: string[]; samplingDate?: string }
+) => {
+    return prisma.inspection.update({
+        where: { inspectionID },
+        data
+    });
+};
+

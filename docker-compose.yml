@@ -2,9 +2,9 @@ services:
   database:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: easyrice
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: easyrice_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5433:5432"
     volumes:
@@ -38,7 +38,7 @@ services:
       - database
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - DATABASE_URL=postgresql://easyrice:password123@database:5432/easyrice_db?schema=public
+      - DATABASE_URL=${DATABASE_URL}
 
 volumes:
   pgdata:
